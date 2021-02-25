@@ -1,0 +1,68 @@
+version: '3.6'
+services:
+  firefly-back:
+    image: jc5x/firefly-iii:latest
+    volumes:
+      - type: volume
+        source: UPLOAD_VOLUME
+        target: /var/www/html/storage/upload
+        volume:
+          nocopy: true
+      - type: bind
+        source: $PWD/autoca.crt
+        target: /etc/ssl/autoca.crt
+    env_file: .env
+    environment:
+      MYSQL_SSL_CA: /etc/ssl/autoca.crt
+      DB_PASSWORD_FILE: /run/secrets/DB_PASS 
+      APP_KEY_FILE: /run/secrets/APP_PASS
+    container_name: firefly-back
+    networks:
+      internal_net:
+    secrets:
+     - DB_PASS
+     - APP_PASS
+
+  firefly-front:
+    image: traefik:v2.4.0
+    container_name: firefly-proxy
+    hostname: firefly
+    domainname: home.lan
+    volumes:
+      - type: bind
+        source: $PWD/traefik/
+        target: /etc/traefik/
+      - type: bind
+        source: /var/run/docker.sock
+        target: /var/run/docker.sock
+    networks:
+      external_net:
+        ipv4_address: 192.168.40.110
+      internal_net:
+    restart: unless-stopped
+    depends_on:
+      - "firefly-back"
+
+networks:
+  external_net:
+    external:
+      name: SERVERS-DOCKER
+  internal_net:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+      - subnet: 10.0.2.0/24
+        gateway: 10.0.2.1
+
+volumes:
+  UPLOAD_VOLUME:
+    driver: local-persist
+    driver_opts:
+      mountpoint: "$PWD/upload"
+
+secrets:
+  DB_PASS:
+    file: $PWD/db_pass.txt
+  APP_PASS:
+    file: $PWD/app_pass.txt

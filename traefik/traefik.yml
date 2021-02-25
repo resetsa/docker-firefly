@@ -1,0 +1,23 @@
+providers:
+  file:
+    directory: /etc/traefik/services/
+    watch: true
+
+entryPoints:
+  web:
+    address: ":80"
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+  websecure:
+    address: ":443"
+    http:
+      tls: 
+        options: general-options
+
+api:
+  # Dashboard
+  dashboard: false
+  insecure: false

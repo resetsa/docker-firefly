@@ -1,0 +1,22 @@
+http:
+  routers:
+    ff-router:
+      entryPoints:
+        - websecure
+      service: service-ff
+      rule: PathPrefix(`/`)
+      tls: {}
+      middlewares:
+        - add-XForwardedProto
+
+  middlewares:
+    add-XForwardedProto:
+      headers:
+        customRequestHeaders:
+          X-Forwarded-Proto: "https"
+
+  services:
+    service-ff:
+      loadBalancer:
+        servers:
+          - url: "http://firefly-back:8080/"
